@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Monitor - Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="icon">🎯</span>
+                    <h1>Study Monitor Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="exportBtn" class="btn-secondary">📥 Export Data</button>
+                    <button id="settingsBtn" class="btn-secondary">⚙️ Settings</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="overview">📊 Overview</button>
+            <button class="tab" data-tab="sessions">📚 Sessions</button>
+            <button class="tab" data-tab="weekly">📈 Weekly Report</button>
+            <button class="tab" data-tab="insights">💡 Insights</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="currentStreak">0</div>
+                            <div class="stat-label">Day Streak</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalSessions">0</div>
+                            <div class="stat-label">Total Sessions</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalFocusTime">0h</div>
+                            <div class="stat-label">Focus Time</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="avgFocusPercentage">0%</div>
+                            <div class="stat-label">Avg Focus</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <h3>Today's Activity</h3>
+                        <div id="todayChart" class="chart-container">
+                            <div class="pie-chart">
+                                <svg id="todayPieChart" width="200" height="200"></svg>
+                                <div class="chart-legend" id="todayLegend"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>This Week's Progress</h3>
+                        <div id="weekChart" class="chart-container">
+                            <canvas id="weekBarChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Sites -->
+                <div class="sites-section">
+                    <div class="sites-card">
+                        <h3>📚 Top Study Sites</h3>
+                        <div id="topStudySites" class="sites-list"></div>
+                    </div>
+                    <div class="sites-card">
+                        <h3>📱 Top Distracting Sites</h3>
+                        <div id="topDistractingSites" class="sites-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions Tab -->
+            <div id="sessions" class="tab-content">
+                <div class="sessions-header">
+                    <h2>Recent Sessions</h2>
+                    <select id="sessionFilter" class="filter-select">
+                        <option value="all">All Sessions</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div id="sessionsList" class="sessions-list"></div>
+            </div>
+
+            <!-- Weekly Report Tab -->
+            <div id="weekly" class="tab-content">
+                <div class="report-header">
+                    <h2>Weekly Report</h2>
+                    <div class="week-selector">
+                        <button id="prevWeek" class="btn-icon">◀</button>
+                        <span id="weekRange">Loading...</span>
+                        <button id="nextWeek" class="btn-icon">▶</button>
+                    </div>
+                </div>
+                <div id="weeklyReport" class="weekly-report"></div>
+            </div>
+
+            <!-- Insights Tab -->
+            <div id="insights" class="tab-content">
+                <h2>Insights & Recommendations</h2>
+                <div id="insightsList" class="insights-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../utils.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

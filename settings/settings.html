@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Monitor - Settings</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+
+<body>
+    <div class="settings-page">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="icon">⚙️</span>
+                    <h1>Settings</h1>
+                </div>
+                <button id="backBtn" class="btn-secondary">← Back to Dashboard</button>
+            </div>
+        </header>
+
+        <main class="content">
+            <div class="settings-container">
+                <!-- Session Settings -->
+                <section class="settings-section">
+                    <h2>⏰ Session Settings</h2>
+                    <div class="setting-item">
+                        <label for="sessionDuration">Default Session Duration (minutes)</label>
+                        <input type="number" id="sessionDuration" min="1" max="180" value="25">
+                    </div>
+                    <div class="setting-item">
+                        <label for="breakDuration">Break Duration (minutes)</label>
+                        <input type="number" id="breakDuration" min="1" max="60" value="5">
+                    </div>
+                    <div class="setting-item">
+                        <label for="longBreakDuration">Long Break Duration (minutes)</label>
+                        <input type="number" id="longBreakDuration" min="1" max="60" value="15">
+                    </div>
+                </section>
+
+                <!-- Alert Settings -->
+                <section class="settings-section">
+                    <h2>🔔 Alert Settings</h2>
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="distractionAlertEnabled">
+                            <span>Enable Distraction Alerts</span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="distractionAlertDelay">Alert Delay (seconds on distracting site)</label>
+                        <input type="number" id="distractionAlertDelay" min="5" max="300" value="10">
+                    </div>
+                    <div class="setting-item">
+                        <label for="distractionAlertFrequency">Alert Frequency (seconds between alerts)</label>
+                        <input type="number" id="distractionAlertFrequency" min="30" max="600" value="60">
+                    </div>
+                </section>
+
+                <!-- Break Reminder Settings -->
+                <section class="settings-section">
+                    <h2>☕ Break Reminders</h2>
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="breakReminderEnabled">
+                            <span>Enable Break Reminders</span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="breakReminderInterval">Reminder Interval (minutes)</label>
+                        <input type="number" id="breakReminderInterval" min="5" max="120" value="25">
+                    </div>
+                </section>
+
+                <!-- Blocking Settings -->
+                <section class="settings-section">
+                    <h2>🚫 Website Blocking</h2>
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="blockingEnabled">
+                            <span>Enable Automatic Website Blocking</span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="blockingThreshold">Blocking Threshold (minutes on distracting site)</label>
+                        <input type="number" id="blockingThreshold" min="1" max="60" value="5">
+                    </div>
+                    <div class="setting-item">
+                        <label for="blockingDuration">Block Duration (minutes)</label>
+                        <input type="number" id="blockingDuration" min="1" max="120" value="10">
+                    </div>
+                </section>
+
+                <!-- Notification Settings -->
+                <section class="settings-section">
+                    <h2>🔊 Notifications</h2>
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="notificationsEnabled">
+                            <span>Enable Notifications</span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="soundEnabled">
+                            <span>Enable Sound</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Data Settings -->
+                <section class="settings-section">
+                    <h2>💾 Data Management</h2>
+                    <div class="setting-item">
+                        <label for="dataRetentionDays">Data Retention (days)</label>
+                        <input type="number" id="dataRetentionDays" min="7" max="365" value="90">
+                    </div>
+                    <div class="setting-item">
+                        <button id="clearDataBtn" class="btn-danger">Clear All Data</button>
+                        <p class="setting-description">This will permanently delete all session history and statistics.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Save Button -->
+                <div class="save-section">
+                    <button id="saveBtn" class="btn-primary">💾 Save Settings</button>
+                    <button id="resetBtn" class="btn-secondary">🔄 Reset to Defaults</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../utils.js"></script>
+    <script src="settings.js"></script>
+</body>
+
+</html>

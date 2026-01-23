@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Monitor</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span class="icon">🎯</span>
+                <h1>Study Monitor</h1>
+            </div>
+            <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
+        </div>
+
+        <!-- Session Status -->
+        <div id="sessionStatus" class="session-status inactive">
+            <div class="status-indicator">
+                <div class="pulse"></div>
+                <span id="statusText">No Active Session</span>
+            </div>
+        </div>
+
+        <!-- Timer Display -->
+        <div class="timer-section">
+            <div class="timer-display">
+                <span id="timerDisplay">00:00:00</span>
+            </div>
+            <div class="timer-label">Session Duration</div>
+        </div>
+
+        <!-- Focus Stats -->
+        <div id="statsSection" class="stats-section hidden">
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="focusTime">0m</div>
+                    <div class="stat-label">Focus Time</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📱</div>
+                <div class="stat-content">
+                    <div class="stat-value" id="distractionTime">0m</div>
+                    <div class="stat-label">Distracted</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Focus Percentage -->
+        <div id="focusSection" class="focus-section hidden">
+            <div class="focus-label">
+                <span>Focus Score</span>
+                <span id="focusPercentage" class="focus-value">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="focusProgress" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Current Site Info -->
+        <div id="currentSiteSection" class="current-site hidden">
+            <div class="site-header">Current Site</div>
+            <div class="site-info">
+                <div class="site-domain" id="currentDomain">-</div>
+                <div class="site-meta">
+                    <span class="site-category" id="currentCategory">-</span>
+                    <span class="site-time" id="currentSiteTime">0s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">
+                <span class="btn-icon">▶️</span>
+                <span>Start Session</span>
+            </button>
+            <button id="pauseBtn" class="btn btn-secondary hidden">
+                <span class="btn-icon">⏸️</span>
+                <span>Pause</span>
+            </button>
+            <button id="resumeBtn" class="btn btn-primary hidden">
+                <span class="btn-icon">▶️</span>
+                <span>Resume</span>
+            </button>
+            <button id="stopBtn" class="btn btn-danger hidden">
+                <span class="btn-icon">⏹️</span>
+                <span>Stop Session</span>
+            </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button id="dashboardBtn" class="action-btn">
+                <span>📊</span>
+                <span>Dashboard</span>
+            </button>
+            <button id="statsBtn" class="action-btn">
+                <span>📈</span>
+                <span>Statistics</span>
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <span class="version">v1.0.0</span>
+        </div>
+    </div>
+
+    <script src="../utils.js"></script>
+    <script src="popup.js"></script>
+</body>
+
+</html>
