@@ -155,6 +155,9 @@ async function handleMessage(request, sender) {
             await storage.clearAllData();
             return { success: true };
 
+        case 'checkMLStatus':
+            return await checkMLServerStatus();
+
         default:
             return { error: 'Unknown action' };
     }
@@ -455,6 +458,22 @@ chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIn
         // Button 1 is "Continue Studying" - do nothing
     }
 });
+
+// Check if the SmartFocus ML server is running
+async function checkMLServerStatus() {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2000);
+        const resp = await fetch('http://127.0.0.1:5000/health', {
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+        const data = await resp.json();
+        return { active: data.model_loaded === true };
+    } catch {
+        return { active: false };
+    }
+}
 
 // Update extension badge
 function updateBadge(status) {

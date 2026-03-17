@@ -67,6 +67,70 @@ body {
   transform: scale(1.05);
 }
 
+/* Header Actions Row */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ML Status Badge */
+.ml-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: background 0.4s ease, color 0.4s ease;
+  cursor: default;
+  user-select: none;
+}
+
+.ml-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Checking = grey, no animation */
+.ml-badge.ml-checking {
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+}
+.ml-badge.ml-checking .ml-dot {
+  background: rgba(255,255,255,0.5);
+}
+
+/* Active = bright green with pulse */
+.ml-badge.ml-active {
+  background: rgba(76, 217, 100, 0.25);
+  color: #c8ffd4;
+  border: 1px solid rgba(76, 217, 100, 0.4);
+}
+.ml-badge.ml-active .ml-dot {
+  background: #4cd964;
+  animation: mlPulse 2s ease-in-out infinite;
+}
+
+/* Offline = muted grey */
+.ml-badge.ml-offline {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.45);
+}
+.ml-badge.ml-offline .ml-dot {
+  background: rgba(255,255,255,0.3);
+}
+
+@keyframes mlPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
+
 /* Session Status */
 .session-status {
   padding: 16px 20px;

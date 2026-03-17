@@ -100,14 +100,22 @@ class Analytics {
             totalTime,
             focusPercentage,
             topSites: sitesArray.slice(0, 10),
-            sessions: sessions.map(s => this.generateSessionSummary(s))
+            sessions: await Promise.all(sessions.map(s => this.generateSessionSummary(s)))
         };
     }
 
     // Generate weekly report
     async generateWeeklyReport(weekStartDate = null) {
-        const today = new Date();
-        const startOfWeek = weekStartDate || new Date(today.setDate(today.getDate() - today.getDay()));
+        // Fix: don't mutate today when computing week start
+        let startOfWeek;
+        if (weekStartDate) {
+            startOfWeek = new Date(weekStartDate);
+        } else {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - dayOfWeek);
+        }
         startOfWeek.setHours(0, 0, 0, 0);
 
         const endOfWeek = new Date(startOfWeek);
@@ -280,7 +288,7 @@ class Analytics {
             exportDate: Date.now(),
             totalSessions: sessions.length,
             statistics: stats,
-            sessions: sessions.map(s => this.generateSessionSummary(s))
+            sessions: await Promise.all(sessions.map(s => this.generateSessionSummary(s)))
         };
 
         if (format === 'csv') {

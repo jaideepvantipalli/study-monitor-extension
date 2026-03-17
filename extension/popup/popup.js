@@ -6,6 +6,7 @@ let updateInterval = null;
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
     await updateUI();
+    await checkMLStatus(); // Show ML Active / Offline badge
 
     // Set up event listeners
     document.getElementById('startBtn').addEventListener('click', startSession);
@@ -18,6 +19,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Start update interval
     updateInterval = setInterval(updateUI, 1000);
+    // Re-check ML status every 10 seconds
+    setInterval(checkMLStatus, 10000);
 });
 
 // Update UI with current session status
@@ -229,3 +232,31 @@ window.addEventListener('unload', () => {
         clearInterval(updateInterval);
     }
 });
+
+// ── ML Status Badge ──────────────────────────────────────────────────────────
+
+/**
+ * Checks if the SmartFocus ML server is running and updates the badge.
+ * The badge shows:
+ *   • Green  "ML Active"  — server running, model loaded, classifying URLs via ML
+ *   • Grey   "ML Offline" — server down, using keyword/domain fallback
+ */
+async function checkMLStatus() {
+    const badge = document.getElementById('mlStatus');
+    const text = document.getElementById('mlStatusText');
+    if (!badge || !text) return;
+
+    try {
+        const result = await chrome.runtime.sendMessage({ action: 'checkMLStatus' });
+        if (result && result.active) {
+            badge.className = 'ml-badge ml-active';
+            text.textContent = 'ML Active';
+        } else {
+            badge.className = 'ml-badge ml-offline';
+            text.textContent = 'ML Offline';
+        }
+    } catch {
+        badge.className = 'ml-badge ml-offline';
+        text.textContent = 'ML Offline';
+    }
+}

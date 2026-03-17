@@ -9,10 +9,11 @@ A powerful, AI-powered browser extension that helps students stay focused during
 - Real-time tracking of focus vs distraction time
 - Automatic website categorization (educational/distracting/neutral)
 
-### 🤖 **ML-Based Content Classification**
-- Intelligent website categorization using keyword analysis
-- Special YouTube content analysis (educational vs entertainment)
-- Customizable whitelist/blacklist for personalized classification
+### 🤖 **ML-Powered Classification**
+- Intelligent website categorization using a local **LinearSVC + TF-IDF** model.
+- Strictly domain-based classification trained on custom datasets from Colab.
+- Special YouTube content analysis (educational vs entertainment).
+- Customizable whitelist/blacklist for personalized classification.
 
 ### 🔔 **Smart Alerts & Reminders**
 - Gentle distraction alerts when visiting non-study sites
@@ -44,11 +45,17 @@ A powerful, AI-powered browser extension that helps students stay focused during
    - Clone or download this repository
    - Extract to a folder on your computer
 
-2. **Load in Chrome/Edge**
+2. **Setup ML Backend**
+   - Ensure Python 3.x is installed.
+   - Install dependencies: `pip install -r backend/requirements.txt`
+   - Run the server: `python backend/model_server.py`
+   - Keep the server running while using the extension.
+
+3. **Load in Chrome/Edge**
    - Open Chrome/Edge and navigate to `chrome://extensions/`
    - Enable "Developer mode" (toggle in top right)
    - Click "Load unpacked"
-   - Select the `study-monitor-extension` folder
+   - Select the `extension/` folder
 
 3. **Start Using**
    - Click the extension icon in your toolbar
@@ -115,11 +122,14 @@ The extension automatically classifies websites, but you can customize:
 ## 🎨 Features Breakdown
 
 ### Content Classification Engine
-The extension uses a hybrid ML approach:
-- **Keyword Analysis**: Matches page content against educational/distracting keywords
-- **Domain Reputation**: Pre-categorized database of popular websites
-- **YouTube Analysis**: Special handling for video content using titles, descriptions, and tags
-- **Confidence Scoring**: Each classification includes a confidence score
+The extension uses a high-performance ML model:
+- **ML Backend (FastAPI)**: Processes URLs in real-time using a LinearSVC model.
+- **Domain Preprocessing**: Strictly cleans and tokenizes domains for accurate prediction.
+- **Label Mapping**:
+    - `0` 🎓 **Educational**: Tracked as focus time.
+    - `1` 🎮 **Distracting**: Triggers alerts/blocking.
+    - `2` ⚪ **Neutral**: Tracks general activity.
+- **Hybrid Fallback**: Uses keyword analysis if the ML server is offline.
 
 ### Analytics Engine
 Generates comprehensive insights:
@@ -132,33 +142,23 @@ Generates comprehensive insights:
 
 ```
 study-monitor-extension/
-├── manifest.json           # Extension configuration
-├── background.js          # Service worker (main controller)
-├── content-script.js      # Page content extraction
-├── utils.js              # Shared utilities
-├── classifier.js         # ML classification engine
-├── storage.js            # Data persistence layer
-├── alerts.js             # Notification manager
-├── analytics.js          # Analytics engine
-├── popup/                # Extension popup
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── dashboard/            # Analytics dashboard
-│   ├── dashboard.html
-│   ├── dashboard.css
-│   └── dashboard.js
-├── settings/             # Settings page
-│   ├── settings.html
-│   ├── settings.css
-│   └── settings.js
-├── icons/                # Extension icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── data/                 # Classification data
-    ├── categories.json   # Website categories
-    └── keywords.json     # Classification keywords
+├── backend/               # Machine Learning Backend (FastAPI)
+│   ├── model_server.py    # Python FastAPI ML server
+│   ├── website_model.pkl  # Trained LinearSVC model
+│   ├── vectorizer.pkl     # TF-IDF Vectorizer
+│   └── requirements.txt   # Python dependencies
+├── extension/             # Chrome Extension
+│   ├── manifest.json      # Extension configuration
+│   ├── background.js     # Service worker
+│   ├── content-script.js # Page content extraction
+│   ├── classifier.js    # ML classification engine
+│   ├── storage.js       # Data persistence
+│   ├── dashboard/       # Analytics dashboard
+│   ├── popup/           # Extension popup
+│   ├── settings/        # Settings page
+│   ├── icons/           # Extension icons
+│   └── data/            # Fallback data
+└── README.md              # Project documentation
 ```
 
 ## 🔒 Privacy
@@ -199,13 +199,14 @@ Created as a final year project to help students improve their online study habi
 
 ### Extension not tracking?
 - Make sure you've started a session (click "Start Session")
+- Ensure the ML server is running (`python model_server.py`)
 - Check that the extension has necessary permissions
 - Reload the extension from chrome://extensions/
 
 ### Classifications seem wrong?
-- Add sites to whitelist/blacklist in settings
-- The ML model improves with more data
-- YouTube classification requires page to fully load
+- Ensure the latest `website_model.pkl` and `vectorizer.pkl` are in the project root.
+- Add sites to whitelist/blacklist in settings to override AI.
+- The ML model specializes in domain-based categorization.
 
 ### Notifications not showing?
 - Check browser notification permissions
