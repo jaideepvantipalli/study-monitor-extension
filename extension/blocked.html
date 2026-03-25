@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Blocked - Study Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            padding: 48px 40px;
+            max-width: 520px;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .shield-icon {
+            font-size: 72px;
+            margin-bottom: 16px;
+            display: block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.06); }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ff6b6b;
+        }
+
+        .domain-badge {
+            display: inline-block;
+            background: rgba(255, 107, 107, 0.15);
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            color: #ff9a9a;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 6px 18px;
+            border-radius: 999px;
+            margin: 12px 0 24px;
+            letter-spacing: 0.3px;
+        }
+
+        .reason {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .countdown-box {
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 20px 32px;
+            margin-bottom: 32px;
+        }
+
+        .countdown-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .countdown-timer {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffd166;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50, #2e7d32);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(76, 175, 80, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-2px);
+        }
+
+        .footer-note {
+            margin-top: 28px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <span class="shield-icon">🛡️</span>
+        <h1>Website Blocked</h1>
+        <div class="domain-badge" id="domainBadge">—</div>
+        <p class="reason">
+            You've spent too much time on this distracting site during your study session.
+            It has been temporarily blocked to help you stay focused. 💪
+        </p>
+
+        <div class="countdown-box">
+            <div class="countdown-label">Unblocks in</div>
+            <div class="countdown-timer" id="countdown">—</div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="goBack()">← Go Back</button>
+            <button class="btn btn-secondary" onclick="openDashboard()">📊 Dashboard</button>
+        </div>
+
+        <p class="footer-note">Study Monitor Extension — Stay on track!</p>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const domain = params.get('domain') || 'this site';
+        const unblockAt = parseInt(params.get('unblockAt'), 10) || (Date.now() + 600000);
+
+        document.getElementById('domainBadge').textContent = domain;
+
+        function formatTime(ms) {
+            if (ms <= 0) return '00:00';
+            const totalSec = Math.ceil(ms / 1000);
+            const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+            const s = (totalSec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateCountdown() {
+            const remaining = unblockAt - Date.now();
+            if (remaining <= 0) {
+                document.getElementById('countdown').textContent = '00:00';
+                // Site should be unblocked — reload to retry
+                setTimeout(() => {
+                    history.back();
+                }, 1500);
+                return;
+            }
+            document.getElementById('countdown').textContent = formatTime(remaining);
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        function goBack() {
+            if (history.length > 1) {
+                history.back();
+            } else {
+                window.close();
+            }
+        }
+
+        function openDashboard() {
+            chrome.runtime.sendMessage({ action: 'openDashboard' });
+        }
+    </script>
+</body>
+
+</html>

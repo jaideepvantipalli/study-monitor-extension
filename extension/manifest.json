@@ -44,7 +44,9 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "icons/*"
+                "icons/*",
+                "blocked.html",
+                "data/*.json"
             ],
             "matches": [
                 "<all_urls>"

@@ -4,18 +4,27 @@
 class AlertManager {
     constructor() {
         this.lastAlertTime = {};
-        this.settings = null;
-        this.init();
+        this._storage = new StorageManager();
+        this._settings = null; // lazy-loaded; reset on SW restart
     }
 
-    async init() {
-        const storage = new StorageManager();
-        this.settings = await storage.getSettings();
+    // Lazy-load settings — safe against service-worker restarts
+    async _getSettings() {
+        if (!this._settings) {
+            this._settings = await this._storage.getSettings();
+        }
+        return this._settings;
+    }
+
+    // Update cached settings (called from background when user saves settings)
+    async updateSettings(newSettings) {
+        this._settings = newSettings;
     }
 
     // Show distraction alert
     async showDistractionAlert(domain, timeSpent) {
-        if (!this.settings.distractionAlertEnabled || !this.settings.notificationsEnabled) {
+        const settings = await this._getSettings();
+        if (!settings.distractionAlertEnabled || !settings.notificationsEnabled) {
             return;
         }
 
@@ -24,13 +33,13 @@ class AlertManager {
         const timeSinceLastAlert = (now - lastAlert) / 1000;
 
         // Check if enough time has passed since last alert
-        if (timeSinceLastAlert < this.settings.distractionAlertFrequency) {
+        if (timeSinceLastAlert < settings.distractionAlertFrequency) {
             return;
         }
 
         this.lastAlertTime[domain] = now;
 
-        await chrome.notifications.create({
+        await chrome.notifications.create(`distraction_${domain}_${now}`, {
             type: 'basic',
             iconUrl: 'icons/icon128.png',
             title: '🎯 Stay Focused!',
@@ -39,23 +48,23 @@ class AlertManager {
             requireInteraction: false
         });
 
-        if (this.settings.soundEnabled) {
-            // Play notification sound
+        if (settings.soundEnabled) {
             this.playNotificationSound();
         }
     }
 
     // Show break reminder
     async showBreakReminder(sessionDuration) {
-        if (!this.settings.breakReminderEnabled || !this.settings.notificationsEnabled) {
+        const settings = await this._getSettings();
+        if (!settings.breakReminderEnabled || !settings.notificationsEnabled) {
             return;
         }
 
-        await chrome.notifications.create({
+        await chrome.notifications.create(`breakReminder_${Date.now()}`, {
             type: 'basic',
             iconUrl: 'icons/icon128.png',
             title: '☕ Time for a Break!',
-            message: `You've been studying for ${this.formatTime(sessionDuration)}. Take a ${this.formatTime(this.settings.breakDuration)} break to recharge!`,
+            message: `You've been studying for ${this.formatTime(sessionDuration)}. Take a ${this.formatTime(settings.breakDuration)} break to recharge!`,
             priority: 2,
             requireInteraction: true,
             buttons: [
@@ -64,18 +73,19 @@ class AlertManager {
             ]
         });
 
-        if (this.settings.soundEnabled) {
+        if (settings.soundEnabled) {
             this.playNotificationSound();
         }
     }
 
     // Show website blocked notification
     async showBlockedNotification(domain, timeRemaining) {
-        if (!this.settings.notificationsEnabled) {
+        const settings = await this._getSettings();
+        if (!settings.notificationsEnabled) {
             return;
         }
 
-        await chrome.notifications.create({
+        await chrome.notifications.create(`blocked_${domain}_${Date.now()}`, {
             type: 'basic',
             iconUrl: 'icons/icon128.png',
             title: '🚫 Website Blocked',
@@ -87,7 +97,8 @@ class AlertManager {
 
     // Show session complete notification
     async showSessionComplete(session) {
-        if (!this.settings.notificationsEnabled) {
+        const settings = await this._getSettings();
+        if (!settings.notificationsEnabled) {
             return;
         }
 
@@ -111,7 +122,7 @@ class AlertManager {
             message += '\nLet\'s do better next time!';
         }
 
-        await chrome.notifications.create({
+        await chrome.notifications.create(`sessionComplete_${Date.now()}`, {
             type: 'basic',
             iconUrl: 'icons/icon128.png',
             title: `${emoji} Study Session Complete`,
@@ -127,7 +138,8 @@ class AlertManager {
 
     // Show milestone notification
     async showMilestone(type, value) {
-        if (!this.settings.notificationsEnabled) {
+        const settings = await this._getSettings();
+        if (!settings.notificationsEnabled) {
             return;
         }
 
@@ -150,7 +162,7 @@ class AlertManager {
         }
 
         if (title) {
-            await chrome.notifications.create({
+            await chrome.notifications.create(`milestone_${type}_${Date.now()}`, {
                 type: 'basic',
                 iconUrl: 'icons/icon128.png',
                 title: title,
@@ -163,11 +175,12 @@ class AlertManager {
 
     // Show custom notification
     async showNotification(title, message, options = {}) {
-        if (!this.settings.notificationsEnabled) {
+        const settings = await this._getSettings();
+        if (!settings.notificationsEnabled) {
             return;
         }
 
-        await chrome.notifications.create({
+        await chrome.notifications.create(`custom_${Date.now()}`, {
             type: 'basic',
             iconUrl: 'icons/icon128.png',
             title: title,
@@ -180,8 +193,6 @@ class AlertManager {
 
     // Play notification sound
     playNotificationSound() {
-        // Create an audio context and play a simple beep
-        // This is a placeholder - you can add actual sound files
         try {
             const audioContext = new AudioContext();
             const oscillator = audioContext.createOscillator();
@@ -215,11 +226,6 @@ class AlertManager {
         } else {
             return `${seconds}s`;
         }
-    }
-
-    // Update settings
-    async updateSettings(newSettings) {
-        this.settings = newSettings;
     }
 }
 

@@ -17,6 +17,15 @@ let currentSiteData = null;
 let blockedSites = new Map(); // domain -> unblock timestamp
 let settings = null;
 
+// Always use this helper — the MV3 service worker can be killed at any time,
+// resetting in-memory variables. This ensures settings are always available.
+async function getSettings() {
+    if (!settings) {
+        settings = await storage.getSettings();
+    }
+    return settings;
+}
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
     console.log('Study Monitor Extension installed');
@@ -158,6 +167,10 @@ async function handleMessage(request, sender) {
         case 'checkMLStatus':
             return await checkMLServerStatus();
 
+        case 'openDashboard':
+            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard/dashboard.html') });
+            return { success: true };
+
         default:
             return { error: 'Unknown action' };
     }
@@ -193,9 +206,10 @@ async function startSession() {
     }
 
     // Set up break reminder alarm
-    if (settings.breakReminderEnabled) {
+    const s = await getSettings();
+    if (s.breakReminderEnabled) {
         chrome.alarms.create('breakReminder', {
-            delayInMinutes: settings.breakReminderInterval / 60
+            delayInMinutes: s.breakReminderInterval / 60
         });
     }
 
@@ -317,13 +331,12 @@ async function startTrackingSite(url) {
     if (blockedSites.has(domain)) {
         const unblockTime = blockedSites.get(domain);
         if (Date.now() < unblockTime) {
-            // Still blocked - redirect or show warning
+            // Still blocked - redirect the tab to the block page
             currentSession.blockedAttempts++;
-            const timeRemaining = Math.floor((unblockTime - Date.now()) / 1000);
-            await alertManager.showBlockedNotification(domain, timeRemaining);
-
-            // Optionally redirect to a blocking page
-            // chrome.tabs.update(activeTabId, { url: 'blocked.html?domain=' + domain });
+            const blockPageUrl = chrome.runtime.getURL(
+                `blocked.html?domain=${encodeURIComponent(domain)}&unblockAt=${unblockTime}`
+            );
+            chrome.tabs.update(activeTabId, { url: blockPageUrl });
             return;
         } else {
             // Unblock
@@ -397,15 +410,24 @@ async function checkDistractionAlert() {
     const timeOnSite = Math.floor((Date.now() - currentSiteStartTime) / 1000);
 
     // Show alert after delay
-    if (timeOnSite >= settings.distractionAlertDelay) {
+    const s = await getSettings();
+    if (timeOnSite >= s.distractionAlertDelay) {
         await alertManager.showDistractionAlert(currentSiteData.domain, timeOnSite);
         currentSession.alertsShown++;
 
         // Check if should block
-        if (settings.blockingEnabled && timeOnSite >= settings.blockingThreshold) {
-            const unblockTime = Date.now() + (settings.blockingDuration * 1000);
+        if (s.blockingEnabled && timeOnSite >= s.blockingThreshold) {
+            const unblockTime = Date.now() + (s.blockingDuration * 1000);
             blockedSites.set(currentSiteData.domain, unblockTime);
-            await alertManager.showBlockedNotification(currentSiteData.domain, settings.blockingDuration);
+            await alertManager.showBlockedNotification(currentSiteData.domain, s.blockingDuration);
+
+            // Immediately redirect the current active tab to the block page
+            if (activeTabId) {
+                const blockPageUrl = chrome.runtime.getURL(
+                    `blocked.html?domain=${encodeURIComponent(currentSiteData.domain)}&unblockAt=${unblockTime}`
+                );
+                chrome.tabs.update(activeTabId, { url: blockPageUrl });
+            }
         }
     }
 }
@@ -419,9 +441,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
                 await alertManager.showBreakReminder(sessionDuration);
 
                 // Schedule next reminder
-                if (settings.breakReminderEnabled) {
+                const reminderSettings = await getSettings();
+                if (reminderSettings.breakReminderEnabled) {
                     chrome.alarms.create('breakReminder', {
-                        delayInMinutes: settings.breakReminderInterval / 60
+                        delayInMinutes: reminderSettings.breakReminderInterval / 60
                     });
                 }
             }
@@ -492,10 +515,12 @@ function updateBadge(status) {
     }
 }
 
-// Periodic session save (every 10 seconds)
+// Periodic tasks (every 10 seconds):
+//  1. Save current session progress
+//  2. Actively enforce distraction blocking
 setInterval(async () => {
     if (currentSession && currentSession.isActive && !currentSession.isPaused) {
-        // Update current site time in session
+        // --- Save current site time in session ---
         if (currentSiteData && currentSiteStartTime) {
             const timeSpent = Math.floor((Date.now() - currentSiteStartTime) / 1000);
 
@@ -510,6 +535,11 @@ setInterval(async () => {
             }
 
             await storage.saveCurrentSession(tempSession);
+        }
+
+        // --- Actively check and enforce distraction blocking ---
+        if (currentSiteData) {
+            await checkDistractionAlert();
         }
     }
 }, 10000);

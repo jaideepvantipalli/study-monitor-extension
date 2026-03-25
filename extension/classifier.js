@@ -154,7 +154,12 @@ class Classifier {
      *   5. Keyword-based content analysis (fallback)
      */
     async classifyUrl(url, pageData = {}) {
-        if (!url || !this.categories) {
+        // If data isn't loaded yet (e.g. after a service-worker restart), re-init
+        if (!this.categories || !this.keywords || !this.customRules) {
+            await this.init();
+        }
+
+        if (!url || !this.categories || !this.keywords) {
             return { category: 'neutral', confidence: 0, reason: 'Initialization pending' };
         }
 
