@@ -26,6 +26,45 @@ async function getSettings() {
     return settings;
 }
 
+// Persist the blockedSites Map to storage so it survives service-worker restarts.
+async function saveBlockedSites() {
+    const serialised = [...blockedSites.entries()];
+    await chrome.storage.local.set({ blockedSites: serialised });
+}
+
+// Rehydrate all critical in-memory state from storage after a SW restart.
+// Safe to call multiple times — only reads storage when state is null/missing.
+async function ensureStateRestored() {
+    // Restore session
+    if (!currentSession) {
+        currentSession = await storage.getCurrentSession();
+        if (currentSession && currentSession.isActive) {
+            updateBadge('active');
+        }
+    }
+
+    // Restore active tab
+    if (!activeTabId) {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs[0]) {
+            activeTabId = tabs[0].id;
+        }
+    }
+
+    // Restore blocked sites
+    if (blockedSites.size === 0) {
+        const result = await chrome.storage.local.get('blockedSites');
+        if (result.blockedSites && Array.isArray(result.blockedSites)) {
+            const now = Date.now();
+            result.blockedSites.forEach(([domain, unblockTime]) => {
+                if (unblockTime > now) {
+                    blockedSites.set(domain, unblockTime);
+                }
+            });
+        }
+    }
+}
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
     console.log('Study Monitor Extension installed');
@@ -56,6 +95,7 @@ chrome.runtime.onStartup.addListener(async () => {
 // Tab activation listener
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
     activeTabId = activeInfo.tabId;
+    await ensureStateRestored();
 
     if (currentSession && currentSession.isActive) {
         // Save time for previous site
@@ -71,6 +111,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
 // Tab update listener (URL changes)
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    await ensureStateRestored();
     if (changeInfo.url && tabId === activeTabId && currentSession && currentSession.isActive) {
         // Save time for previous site
         await saveCurrentSiteTime();
@@ -82,6 +123,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 // Web navigation listener
 chrome.webNavigation.onCompleted.addListener(async (details) => {
+    await ensureStateRestored();
     if (details.frameId === 0 && details.tabId === activeTabId && currentSession && currentSession.isActive) {
         // Request page data from content script
         try {
@@ -339,8 +381,9 @@ async function startTrackingSite(url) {
             chrome.tabs.update(activeTabId, { url: blockPageUrl });
             return;
         } else {
-            // Unblock
+            // Unblock expired — remove and persist
             blockedSites.delete(domain);
+            await saveBlockedSites();
         }
     }
 
@@ -419,6 +462,7 @@ async function checkDistractionAlert() {
         if (s.blockingEnabled && timeOnSite >= s.blockingThreshold) {
             const unblockTime = Date.now() + (s.blockingDuration * 1000);
             blockedSites.set(currentSiteData.domain, unblockTime);
+            await saveBlockedSites(); // persist so SW restart doesn't lose the block
             await alertManager.showBlockedNotification(currentSiteData.domain, s.blockingDuration);
 
             // Immediately redirect the current active tab to the block page

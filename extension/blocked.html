@@ -165,56 +165,14 @@
         </div>
 
         <div class="actions">
-            <button class="btn btn-primary" onclick="goBack()">← Go Back</button>
-            <button class="btn btn-secondary" onclick="openDashboard()">📊 Dashboard</button>
+            <button id="goBackBtn" class="btn btn-primary">← Go Back</button>
+            <button id="dashboardBtn" class="btn btn-secondary">📊 Dashboard</button>
         </div>
 
         <p class="footer-note">Study Monitor Extension — Stay on track!</p>
     </div>
 
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const domain = params.get('domain') || 'this site';
-        const unblockAt = parseInt(params.get('unblockAt'), 10) || (Date.now() + 600000);
-
-        document.getElementById('domainBadge').textContent = domain;
-
-        function formatTime(ms) {
-            if (ms <= 0) return '00:00';
-            const totalSec = Math.ceil(ms / 1000);
-            const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
-            const s = (totalSec % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
-
-        function updateCountdown() {
-            const remaining = unblockAt - Date.now();
-            if (remaining <= 0) {
-                document.getElementById('countdown').textContent = '00:00';
-                // Site should be unblocked — reload to retry
-                setTimeout(() => {
-                    history.back();
-                }, 1500);
-                return;
-            }
-            document.getElementById('countdown').textContent = formatTime(remaining);
-        }
-
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
-
-        function goBack() {
-            if (history.length > 1) {
-                history.back();
-            } else {
-                window.close();
-            }
-        }
-
-        function openDashboard() {
-            chrome.runtime.sendMessage({ action: 'openDashboard' });
-        }
-    </script>
+    <script src="blocked.js"></script>
 </body>
 
 </html>

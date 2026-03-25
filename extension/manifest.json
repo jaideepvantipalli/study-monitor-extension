@@ -46,6 +46,7 @@
             "resources": [
                 "icons/*",
                 "blocked.html",
+                "blocked.js",
                 "data/*.json"
             ],
             "matches": [
