@@ -7,6 +7,11 @@ const ML_SERVER_URL = 'http://127.0.0.1:5000';
 const ML_TIMEOUT_MS   = 5000;  // Allow enough time for cold model loads
 const ML_RETRY_INTERVAL = 30000; // Re-probe server every 30 s if offline
 
+// ── Cache settings ──────────────────────────────────────────────────────────
+const CACHE_TTL_MS   = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_MAX_SIZE = 500;                  // Max cached domains
+const CACHE_STORAGE_KEY = 'mlClassificationCache';
+
 class Classifier {
     constructor() {
         this.categories     = null;
@@ -14,15 +19,34 @@ class Classifier {
         this.customRules    = null;
         this.mlAvailable    = false;
         this.mlRetryTimeout = null;   // handle for pending retry timer
+        this.mlCache        = new Map(); // domain -> { result, timestamp }
         this.init();
 
         // Keep customRules in sync whenever storage changes
         chrome.storage.onChanged.addListener((changes, area) => {
             if (area === 'local' && changes.customRules) {
+                const oldRules = this.customRules || { whitelist: [], blacklist: [] };
                 this.customRules = changes.customRules.newValue || { whitelist: [], blacklist: [] };
-                console.log('Classifier: customRules updated from storage change.');
+
+                // Invalidate cache entries for domains that were just added/removed
+                const changedDomains = new Set([
+                    ...this.symmetricDiff(oldRules.whitelist, this.customRules.whitelist),
+                    ...this.symmetricDiff(oldRules.blacklist, this.customRules.blacklist)
+                ]);
+                changedDomains.forEach(d => this.mlCache.delete(d));
+                if (changedDomains.size > 0) {
+                    this.persistCache();
+                }
+                console.log('Classifier: customRules updated, invalidated cache for', [...changedDomains]);
             }
         });
+    }
+
+    // Helper: items in A or B but not both
+    symmetricDiff(a = [], b = []) {
+        const setA = new Set(a);
+        const setB = new Set(b);
+        return [...a.filter(x => !setB.has(x)), ...b.filter(x => !setA.has(x))];
     }
 
     async init() {
@@ -48,6 +72,9 @@ class Classifier {
         } catch (error) {
             console.error('Failed to load classification data:', error);
         }
+
+        // Restore ML cache from storage
+        await this.restoreCache();
 
         // Check ML server availability at startup
         this.mlAvailable = await this.checkMLServer();
@@ -111,6 +138,15 @@ class Classifier {
     async classifyWithML(url, pageData = {}) {
         if (!this.mlAvailable) return null;
 
+        const domain = this.extractDomain(url);
+
+        // ── Check cache first ──────────────────────────────────────────────
+        const cached = this.getCachedResult(domain);
+        if (cached) {
+            return { ...cached, reason: 'SmartFocus ML model (cached)' };
+        }
+
+        // ── Cache miss — call ML server ─────────────────────────────────────
         try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), ML_TIMEOUT_MS);
@@ -135,12 +171,17 @@ class Classifier {
             const data = await response.json();
             if (!data.label) return null;
 
-            return {
+            const result = {
                 category: data.label,          // "educational" | "distracting" | "neutral"
                 confidence: data.confidence,
                 reason: 'SmartFocus ML model',
                 mlClassified: true
             };
+
+            // ── Store in cache ──────────────────────────────────────────────
+            this.setCachedResult(domain, result);
+
+            return result;
         } catch {
             // Server went offline mid-session — mark unavailable and start retry loop
             console.warn('SmartFocus ML Server unreachable — switching to fallback classifier.');
@@ -148,6 +189,74 @@ class Classifier {
             this.scheduleMLRetry();
             return null;
         }
+    }
+
+    // ── Cache management ────────────────────────────────────────────────────
+
+    /** Get a cached result if it exists and hasn't expired. */
+    getCachedResult(domain) {
+        const entry = this.mlCache.get(domain);
+        if (!entry) return null;
+        if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+            this.mlCache.delete(domain);
+            return null;
+        }
+        return entry.result;
+    }
+
+    /** Store a classification result in the cache. */
+    setCachedResult(domain, result) {
+        // Evict oldest entries if cache is full
+        if (this.mlCache.size >= CACHE_MAX_SIZE) {
+            const oldestKey = this.mlCache.keys().next().value;
+            this.mlCache.delete(oldestKey);
+        }
+        this.mlCache.set(domain, {
+            result: { category: result.category, confidence: result.confidence, mlClassified: true },
+            timestamp: Date.now()
+        });
+        this.persistCache();
+    }
+
+    /** Persist the in-memory cache to chrome.storage.local. */
+    async persistCache() {
+        try {
+            const serialised = {};
+            this.mlCache.forEach((value, key) => {
+                serialised[key] = value;
+            });
+            await chrome.storage.local.set({ [CACHE_STORAGE_KEY]: serialised });
+        } catch (e) {
+            console.warn('Classifier: failed to persist ML cache', e);
+        }
+    }
+
+    /** Restore cache from chrome.storage.local after a SW restart. */
+    async restoreCache() {
+        try {
+            const data = await chrome.storage.local.get(CACHE_STORAGE_KEY);
+            const stored = data[CACHE_STORAGE_KEY];
+            if (stored && typeof stored === 'object') {
+                const now = Date.now();
+                let restored = 0;
+                Object.entries(stored).forEach(([domain, entry]) => {
+                    if (entry.timestamp && (now - entry.timestamp) < CACHE_TTL_MS) {
+                        this.mlCache.set(domain, entry);
+                        restored++;
+                    }
+                });
+                console.log(`Classifier: restored ${restored} cached ML results from storage.`);
+            }
+        } catch (e) {
+            console.warn('Classifier: failed to restore ML cache', e);
+        }
+    }
+
+    /** Clear the entire ML cache. */
+    clearCache() {
+        this.mlCache.clear();
+        this.persistCache();
+        console.log('Classifier: ML cache cleared.');
     }
 
     // ── Main classification method ─────────────────────────────────────────

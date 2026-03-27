@@ -209,6 +209,10 @@ async function handleMessage(request, sender) {
         case 'checkMLStatus':
             return await checkMLServerStatus();
 
+        case 'clearMLCache':
+            classifier.clearCache();
+            return { success: true };
+
         case 'refreshClassifier':
             await classifier.init();
             // Re-classify the current site so the UI immediately reflects
