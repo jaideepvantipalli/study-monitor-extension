@@ -31,10 +31,6 @@ updateCountdown();
 setInterval(updateCountdown, 1000);
 
 // Wire up buttons via addEventListener (inline onclick= violates MV3 CSP)
-document.getElementById('goBackBtn').addEventListener('click', () => {
-    window.location.href = 'chrome://newtab';
-});
-
 document.getElementById('dashboardBtn').addEventListener('click', () => {
     chrome.runtime.sendMessage({ action: 'openDashboard' });
 });
