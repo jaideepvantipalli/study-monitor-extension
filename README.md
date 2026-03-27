@@ -90,13 +90,14 @@ A powerful, AI-powered browser extension that helps students stay focused during
    - Notification preferences
    - Data retention period
 
-### Managing Website Classification
+### 🛡️ Managing Website Classification
 
-The extension automatically classifies websites, but you can customize:
+While the extension uses a high-performance ML model to automatically classify websites, you have full control over the process via the **Customization** page (Settings):
 
-- **Whitelist**: Sites always marked as educational
-- **Blacklist**: Sites always marked as distracting
-- Edit in settings or through the classification system
+- **Whitelist (Always Allowed)**: Specific domains (e.g., `stackoverflow.com`) will always be treated as **educational**, bypassing the AI classifier. This ensures your essential study tools are never blocked.
+- **Blacklist (Always Blocked)**: Specific domains (e.g., `facebook.com`) will always be treated as **distracting**, regardless of content analysis.
+- **Subdomain Support**: Whitelisting or blacklisting a parent domain (e.g., `google.com`) automatically applies the same rule to its subdomains (e.g., `docs.google.com`), providing robust and convenient control.
+- **Instant Sync**: Changes take effect immediately across all active tabs without needing to restart the extension.
 
 ## ⚙️ Configuration Options
 

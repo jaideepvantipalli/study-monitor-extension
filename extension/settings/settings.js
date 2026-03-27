@@ -6,14 +6,124 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load current settings
     await loadSettings();
 
-    // Set up event listeners
+    // Set up list management listeners
+    document.getElementById('addWhitelistBtn').addEventListener('click', () => addDomain('whitelist'));
+    document.getElementById('addBlacklistBtn').addEventListener('click', () => addDomain('blacklist'));
+    document.getElementById('whitelistInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addDomain('whitelist');
+    });
+    document.getElementById('blacklistInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addDomain('blacklist');
+    });
+
+    // Set up core settings listeners
     document.getElementById('saveBtn').addEventListener('click', saveSettings);
     document.getElementById('resetBtn').addEventListener('click', resetSettings);
     document.getElementById('clearDataBtn').addEventListener('click', clearAllData);
     document.getElementById('backBtn').addEventListener('click', () => {
         window.location.href = '../dashboard/dashboard.html';
     });
+
+    // Load custom rules
+    await loadCustomRules();
 });
+
+let customRules = { whitelist: [], blacklist: [] };
+
+// Load custom rules from storage or background
+async function loadCustomRules() {
+    try {
+        const result = await chrome.storage.local.get('customRules');
+        customRules = result.customRules || { whitelist: [], blacklist: [] };
+        renderList('whitelist');
+        renderList('blacklist');
+    } catch (error) {
+        console.error('Error loading custom rules:', error);
+    }
+}
+
+// Render domain list
+function renderList(type) {
+    const container = document.getElementById(`${type}Container`);
+    const domains = customRules[type] || [];
+    
+    container.innerHTML = '';
+    
+    if (domains.length === 0) {
+        container.innerHTML = `<li class="domain-item"><span class="domain-name" style="color: #999;">No domains added yet</span></li>`;
+        return;
+    }
+
+    domains.forEach(domain => {
+        const li = document.createElement('li');
+        li.className = 'domain-item';
+        li.innerHTML = `
+            <span class="domain-name">${domain}</span>
+            <button class="btn-remove" data-domain="${domain}" data-type="${type}">Remove</button>
+        `;
+        container.appendChild(li);
+    });
+
+    // Add remove listeners
+    container.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const domain = e.target.dataset.domain;
+            const listType = e.target.dataset.type;
+            removeDomain(listType, domain);
+        });
+    });
+}
+
+// Add domain to list
+async function addDomain(type) {
+    const input = document.getElementById(`${type}Input`);
+    let domain = input.value.trim().toLowerCase();
+    
+    if (!domain) return;
+    
+    // Simple domain validation/cleaning
+    try {
+        if (domain.includes('://')) {
+            domain = new URL(domain).hostname;
+        }
+        domain = domain.replace('www.', '');
+    } catch (e) {
+        // Keep as is if URL parsing fails
+    }
+
+    if (customRules[type].includes(domain)) {
+        showToast('Domain already in list', 'error');
+        return;
+    }
+
+    // Add to list and remove from the other list if exists
+    customRules[type].push(domain);
+    const otherType = type === 'whitelist' ? 'blacklist' : 'whitelist';
+    customRules[otherType] = customRules[otherType].filter(d => d !== domain);
+
+    // Save and re-render
+    await saveCustomRules();
+    renderList('whitelist');
+    renderList('blacklist');
+    
+    input.value = '';
+    showToast(`Added ${domain} to ${type}`);
+}
+
+// Remove domain from list
+async function removeDomain(type, domain) {
+    customRules[type] = customRules[type].filter(d => d !== domain);
+    await saveCustomRules();
+    renderList(type);
+    showToast(`Removed ${domain} from ${type}`);
+}
+
+// Save custom rules to storage
+async function saveCustomRules() {
+    await chrome.storage.local.set({ customRules });
+    // Notify background script to refresh classifier
+    chrome.runtime.sendMessage({ action: 'refreshClassifier' });
+}
 
 // Load settings from storage
 async function loadSettings() {

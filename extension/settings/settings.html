@@ -109,6 +109,35 @@
                     </div>
                 </section>
 
+                <!-- Whitelist & Blacklist -->
+                <section class="settings-section">
+                    <h2>✅ Whitelist (Always Allowed)</h2>
+                    <p class="setting-description">Domains in this list will never be blocked, regardless of their content category.</p>
+                    <div class="list-management">
+                        <div class="add-item">
+                            <input type="text" id="whitelistInput" placeholder="e.g. stackoverflow.com">
+                            <button id="addWhitelistBtn" class="btn-secondary">Add</button>
+                        </div>
+                        <ul id="whitelistContainer" class="domain-list">
+                            <!-- Items will be added here dynamically -->
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🚫 Blacklist (Always Blocked)</h2>
+                    <p class="setting-description">Domains in this list will be treated as distracting and blocked according to your settings.</p>
+                    <div class="list-management">
+                        <div class="add-item">
+                            <input type="text" id="blacklistInput" placeholder="e.g. facebook.com">
+                            <button id="addBlacklistBtn" class="btn-secondary">Add</button>
+                        </div>
+                        <ul id="blacklistContainer" class="domain-list">
+                            <!-- Items will be added here dynamically -->
+                        </ul>
+                    </div>
+                </section>
+
                 <!-- Data Settings -->
                 <section class="settings-section">
                     <h2>💾 Data Management</h2>

@@ -209,6 +209,20 @@ async function handleMessage(request, sender) {
         case 'checkMLStatus':
             return await checkMLServerStatus();
 
+        case 'refreshClassifier':
+            await classifier.init();
+            // Re-classify the current site so the UI immediately reflects
+            // any whitelist/blacklist changes the user just made.
+            if (currentSiteData && currentSiteData.url) {
+                const newClassification = await classifier.classifyUrl(
+                    currentSiteData.url, currentSiteData.pageData || {}
+                );
+                currentSiteData.category = newClassification.category;
+                currentSiteData.confidence = newClassification.confidence;
+                console.log(`Re-classified ${currentSiteData.domain}: ${newClassification.category} (${newClassification.reason})`);
+            }
+            return { success: true };
+
         case 'openDashboard':
             chrome.tabs.create({ url: chrome.runtime.getURL('dashboard/dashboard.html') });
             return { success: true };

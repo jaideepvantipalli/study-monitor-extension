@@ -242,6 +242,75 @@ body {
     }
 }
 
+/* List Management */
+.list-management {
+    margin-top: 16px;
+    background: #f9f9f9;
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.add-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.add-item input[type="text"] {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.add-item input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.domain-list {
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: white;
+}
+
+.domain-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.domain-item:last-child {
+    border-bottom: none;
+}
+
+.domain-name {
+    font-size: 14px;
+    color: #444;
+}
+
+.btn-remove {
+    padding: 4px 8px;
+    background: #fff;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove:hover {
+    background: #ff6b6b;
+    color: white;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .settings-page {

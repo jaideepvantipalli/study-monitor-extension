@@ -15,6 +15,14 @@ class Classifier {
         this.mlAvailable    = false;
         this.mlRetryTimeout = null;   // handle for pending retry timer
         this.init();
+
+        // Keep customRules in sync whenever storage changes
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area === 'local' && changes.customRules) {
+                this.customRules = changes.customRules.newValue || { whitelist: [], blacklist: [] };
+                console.log('Classifier: customRules updated from storage change.');
+            }
+        });
     }
 
     async init() {
@@ -163,14 +171,29 @@ class Classifier {
             return { category: 'neutral', confidence: 0, reason: 'Initialization pending' };
         }
 
-        const domain = this.extractDomain(url);
-
-        // 1 ── Custom rules (highest priority)
-        if (this.customRules.blacklist.includes(domain)) {
-            return { category: 'distracting', confidence: 100, reason: 'User blacklist' };
+        // Always reload customRules fresh from storage before checking.
+        // This guarantees whitelist/blacklist ALWAYS overrides ML, even if
+        // the service worker restarted or init() raced with a classification.
+        try {
+            const stored = await chrome.storage.local.get('customRules');
+            this.customRules = stored.customRules || { whitelist: [], blacklist: [] };
+        } catch (e) {
+            console.warn('Classifier: could not reload customRules from storage', e);
         }
-        if (this.customRules.whitelist.includes(domain)) {
-            return { category: 'educational', confidence: 100, reason: 'User whitelist' };
+
+        const domain = this.extractDomain(url);
+        const domainParts = domain.split('.');
+
+        // 1 ── Custom rules (highest priority — ALWAYS overrides ML)
+        // Check exact domain and parent domains (e.g. drive.google.com, google.com)
+        for (let i = 0; i <= domainParts.length - 2; i++) {
+            const currentDomain = domainParts.slice(i).join('.');
+            if (this.customRules.blacklist.includes(currentDomain)) {
+                return { category: 'distracting', confidence: 100, reason: `User blacklist (${currentDomain})` };
+            }
+            if (this.customRules.whitelist.includes(currentDomain)) {
+                return { category: 'educational', confidence: 100, reason: `User whitelist (${currentDomain})` };
+            }
         }
 
         // 2 ── SmartFocus ML model (trained on Urls_dataset + dataset + websites_dataset)
