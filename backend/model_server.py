@@ -87,7 +87,13 @@ _LABEL_MAP = {
 }
 
 def map_label(raw) -> str:
-    return _LABEL_MAP.get(raw, str(raw))
+    # Coerce numpy scalars (int64, float64) to native Python types
+    # so that dict key lookup works correctly
+    try:
+        native = int(raw)  # covers np.int64(0), np.float64(0.0), str '0', int 0
+    except (TypeError, ValueError):
+        native = raw
+    return _LABEL_MAP.get(native, str(raw))
 
 # ── Confidence mapping ────────────────────────────────────────────────────────
 
@@ -121,6 +127,9 @@ def decision_to_confidence(decision_scores, predicted_label, label_order: list) 
 
 class PredictRequest(BaseModel):
     url: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    keywords: Optional[str] = None
 
 # ── API endpoints ─────────────────────────────────────────────────────────────
 
