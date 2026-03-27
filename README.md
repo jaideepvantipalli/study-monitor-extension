@@ -12,7 +12,6 @@ A powerful, AI-powered browser extension that helps students stay focused during
 ### 🤖 **ML-Powered Classification**
 - Intelligent website categorization using a local **LinearSVC + TF-IDF** model.
 - Strictly domain-based classification trained on custom datasets from Colab.
-- Special YouTube content analysis (educational vs entertainment).
 - Customizable whitelist/blacklist for personalized classification.
 
 ### 🔔 **Smart Alerts & Reminders**
