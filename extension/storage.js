@@ -156,14 +156,19 @@ class StorageManager {
         // Update streak
         const today = new Date().setHours(0, 0, 0, 0);
         const lastSessionDay = stats.lastSessionDate ? new Date(stats.lastSessionDate).setHours(0, 0, 0, 0) : null;
+        const yesterday = today - 86400000;
 
-        if (!lastSessionDay || lastSessionDay < today - 86400000) {
-            // New day or gap in sessions
-            if (lastSessionDay === today - 86400000) {
-                stats.currentStreak++;
-            } else {
-                stats.currentStreak = 1;
-            }
+        if (lastSessionDay === null) {
+            // First ever session
+            stats.currentStreak = 1;
+        } else if (lastSessionDay === today) {
+            // Already had a session today — streak stays the same
+        } else if (lastSessionDay === yesterday) {
+            // Consecutive day — increment streak
+            stats.currentStreak++;
+        } else {
+            // Gap of 2+ days — reset streak
+            stats.currentStreak = 1;
         }
 
         stats.longestStreak = Math.max(stats.longestStreak, stats.currentStreak);

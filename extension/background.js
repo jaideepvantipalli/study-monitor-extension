@@ -15,6 +15,7 @@ let activeTabId = null;
 let currentSiteStartTime = null;
 let currentSiteData = null;
 let blockedSites = new Map(); // domain -> unblock timestamp
+let distractionAccumulator = new Map(); // domain -> { totalSeconds, lastUpdated }
 let settings = null;
 
 // Always use this helper — the MV3 service worker can be killed at any time,
@@ -30,6 +31,12 @@ async function getSettings() {
 async function saveBlockedSites() {
     const serialised = [...blockedSites.entries()];
     await chrome.storage.local.set({ blockedSites: serialised });
+}
+
+// Persist the distractionAccumulator Map to storage.
+async function saveDistractionAccumulator() {
+    const serialised = [...distractionAccumulator.entries()];
+    await chrome.storage.local.set({ distractionAccumulator: serialised });
 }
 
 // Rehydrate all critical in-memory state from storage after a SW restart.
@@ -60,6 +67,16 @@ async function ensureStateRestored() {
                 if (unblockTime > now) {
                     blockedSites.set(domain, unblockTime);
                 }
+            });
+        }
+    }
+
+    // Restore distraction accumulator
+    if (distractionAccumulator.size === 0) {
+        const result = await chrome.storage.local.get('distractionAccumulator');
+        if (result.distractionAccumulator && Array.isArray(result.distractionAccumulator)) {
+            result.distractionAccumulator.forEach(([domain, data]) => {
+                distractionAccumulator.set(domain, data);
             });
         }
     }
@@ -308,6 +325,10 @@ async function stopSession() {
     currentSession = null;
     currentSiteData = null;
 
+    // Clear accumulated distraction time
+    distractionAccumulator.clear();
+    await saveDistractionAccumulator();
+
     // Clear alarms
     chrome.alarms.clear('breakReminder');
 
@@ -437,6 +458,13 @@ async function saveCurrentSiteTime() {
         currentSession.focusTime += timeSpent;
     } else if (currentSiteData.category === 'distracting') {
         currentSession.distractionTime += timeSpent;
+
+        // Accumulate distraction time for this domain (persists across tab switches)
+        const existing = distractionAccumulator.get(currentSiteData.domain) || { totalSeconds: 0, lastUpdated: now };
+        existing.totalSeconds += timeSpent;
+        existing.lastUpdated = now;
+        distractionAccumulator.set(currentSiteData.domain, existing);
+        await saveDistractionAccumulator();
     } else {
         currentSession.neutralTime += timeSpent;
     }
@@ -468,19 +496,29 @@ async function checkDistractionAlert() {
         return;
     }
 
-    const timeOnSite = Math.floor((Date.now() - currentSiteStartTime) / 1000);
+    const now = Date.now();
+    const currentVisitTime = Math.floor((now - currentSiteStartTime) / 1000);
 
-    // Show alert after delay
+    // Calculate cumulative distraction time for this domain across all tabs/visits
+    const accumulated = distractionAccumulator.get(currentSiteData.domain) || { totalSeconds: 0, lastUpdated: now };
+    const cumulativeTime = accumulated.totalSeconds + currentVisitTime;
+
+    // Show alert after delay (use cumulative time)
     const s = await getSettings();
-    if (timeOnSite >= s.distractionAlertDelay) {
-        await alertManager.showDistractionAlert(currentSiteData.domain, timeOnSite);
+    if (cumulativeTime >= s.distractionAlertDelay) {
+        await alertManager.showDistractionAlert(currentSiteData.domain, cumulativeTime);
         currentSession.alertsShown++;
 
-        // Check if should block
-        if (s.blockingEnabled && timeOnSite >= s.blockingThreshold) {
-            const unblockTime = Date.now() + (s.blockingDuration * 1000);
+        // Check if should block (use cumulative time across all tabs/visits)
+        if (s.blockingEnabled && cumulativeTime >= s.blockingThreshold) {
+            const unblockTime = now + (s.blockingDuration * 1000);
             blockedSites.set(currentSiteData.domain, unblockTime);
             await saveBlockedSites(); // persist so SW restart doesn't lose the block
+
+            // Clear the accumulator for this domain since it's now blocked
+            distractionAccumulator.delete(currentSiteData.domain);
+            await saveDistractionAccumulator();
+
             await alertManager.showBlockedNotification(currentSiteData.domain, s.blockingDuration);
 
             // Immediately redirect the current active tab to the block page
