@@ -321,15 +321,9 @@ Export your study data for external analysis:
 
 ---
 
-## 🤝 Contributing
-
-This is a student final-year project. Suggestions and improvements are welcome!
-
----
-
 ## 📝 License
 
-MIT License — feel free to use and modify for your needs.
+MIT License — feel free to use.
 
 ---
 
